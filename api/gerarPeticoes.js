@@ -1,7 +1,5 @@
 import OpenAI from "openai";
 import dotenv from "dotenv";
-import fs from "fs";
-import path from "path";
 
 dotenv.config();
 
@@ -11,10 +9,14 @@ const openai = new OpenAI({
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ sucesso: false, erro: "Método não permitido" });
+    return res.status(405).json({ sucesso: false, erro: "Método não permitido. Use POST." });
   }
 
   const { tipo, partes, fatos, pedido } = req.body;
+
+  if (!tipo || !partes || !fatos || !pedido) {
+    return res.status(400).json({ sucesso: false, erro: "Todos os campos são obrigatórios." });
+  }
 
   const prompt = `
 Você é um advogado experiente. Gere uma petição do tipo "${tipo}", com base nos dados abaixo:
@@ -33,4 +35,14 @@ Gere um texto jurídico claro, formal e completo. Não use linguagem informal.
       temperature: 0.7,
     });
 
-    const textoPeticao = resposta.choices[0].message.c
+    const textoPeticao = resposta.choices[0].message.content;
+
+    return res.status(200).json({
+      sucesso: true,
+      texto: textoPeticao,
+    });
+  } catch (erro) {
+    console.error("Erro ao gerar petição:", erro);
+    return res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+}
