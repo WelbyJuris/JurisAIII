@@ -35,7 +35,11 @@ Gere um texto jurídico claro, formal e completo. Não use linguagem informal.
       temperature: 0.7,
     });
 
-    const textoPeticao = resposta.choices[0].message.content;
+    const textoPeticao = resposta?.choices?.[0]?.message?.content;
+
+    if (!textoPeticao) {
+      return res.status(500).json({ sucesso: false, erro: "Não foi possível gerar a petição." });
+    }
 
     return res.status(200).json({
       sucesso: true,
@@ -46,3 +50,4 @@ Gere um texto jurídico claro, formal e completo. Não use linguagem informal.
     return res.status(500).json({ sucesso: false, erro: erro.message });
   }
 }
+
