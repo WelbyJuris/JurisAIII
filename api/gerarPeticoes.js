@@ -1,8 +1,10 @@
-import OpenAI from "openai";
+import { Configuration, OpenAIApi } from "openai";
 
-const openai = new OpenAI({
+const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const openai = new OpenAIApi(configuration);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -12,7 +14,7 @@ export default async function handler(req, res) {
   const { tipo, partes, fatos, pedido } = req.body;
 
   if (!tipo || !partes || !fatos || !pedido) {
-    return res.status(400).json({ sucesso: false, erro: "Todos os campos são obrigatórios." });
+    return res.status(400).json({ sucesso: false, erro: "Parâmetros incompletos" });
   }
 
   const prompt = `
@@ -22,25 +24,21 @@ Você é um advogado experiente. Gere uma petição do tipo "${tipo}", com base 
 - Fatos: ${fatos}
 - Pedido: ${pedido}
 
-Gere uma petição formal, com linguagem jurídica clara e direta.
+Gere um texto jurídico claro, formal e completo. Não use linguagem informal.
 `;
 
   try {
-    const resposta = await openai.chat.completions.create({
-      model: "gpt-4",
+    const resposta = await openai.createChatCompletion({
+      model: "gpt-4.1",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });
 
-    const textoPeticao = resposta.choices[0].message.content;
+    const textoPeticao = resposta.data.choices[0].message.content;
 
-    res.status(200).json({
-      sucesso: true,
-      arquivo: `peticao_${Date.now()}.docx`,
-      conteudo: textoPeticao,
-    });
+    return res.status(200).json({ sucesso: true, peticao: textoPeticao });
   } catch (erro) {
     console.error("Erro ao gerar petição:", erro);
-    res.status(500).json({ sucesso: false, erro: erro.message });
+    return res.status(500).json({ sucesso: false, erro: "Erro interno ao gerar petição" });
   }
 }
